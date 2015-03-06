@@ -112,10 +112,13 @@ def main():
   def handle_file(file):
     if file.perms.startswith("d"):
       copied_count = 0
+      file_count = 0
       for subfile in ListAndroidDir(os.path.join(src, file.name), src_device):
         subfile.name = os.path.join(file.name, subfile.name)
-        copied_count += handle_file(subfile)
-      return copied_count
+        sfc, scc = handle_file(subfile)
+        file_count += sfc
+        copied_count += scc
+      return file_count, copied_count
     out_fnam = os.path.join(dest, file.name)
     try:
       stat = os.stat(out_fnam)
@@ -128,13 +131,14 @@ def main():
         or (stat.st_size != file.size)):
           stat = None
     if stat is None:
-      return copy_file(file, out_fnam)
+      return 1, copy_file(file, out_fnam)
     else:
-      return 0
+      return 1, 0
 
   for file in ListAndroidDir(src, src_device):
-    file_count += 1
-    copied_count += handle_file(file)
+    fc, cc = handle_file(file)
+    file_count += fc
+    copied_count += cc
 
   print "Copied %d files. %d files now up to date." % (copied_count, file_count)
 
