@@ -99,8 +99,17 @@ def main():
   file_count = 0
   copied_count = 0
   adb_prefix = ['adb'] + (['-s', src_device] if src_device else [])
-  for file in ListAndroidDir(src, src_device):
-    file_count += 1
+
+  def copy_file(file, dest_file):
+    print file.name + '...'
+    pull_cmd = adb_prefix + ['pull', os.path.join(src, file.name), dest_file]
+    if not dry_run:
+      subprocess.check_call(pull_cmd)
+      if not file.perms.startswith("d"):
+          touch(dest_file, file.timestamp)
+    return 1
+
+  def handle_file(file):
     out_fnam = os.path.join(dest, file.name)
     try:
       stat = os.stat(out_fnam)
@@ -113,13 +122,14 @@ def main():
         or (stat.st_size != file.size)):
           stat = None
     if stat is None:
-      print file.name + '...'
-      pull_cmd = adb_prefix + ['pull', os.path.join(src, file.name), out_fnam]
-      copied_count += 1
-      if not dry_run:
-        subprocess.check_call(pull_cmd)
-        if not file.perms.startswith("d"):
-            touch(out_fnam, file.timestamp)
+      return copy_file(file, out_fnam)
+    else:
+      return 0
+
+  for file in ListAndroidDir(src, src_device):
+    file_count += 1
+    copied_count += handle_file(file)
+
   print "Copied %d files. %d files now up to date." % (copied_count, file_count)
 
 
