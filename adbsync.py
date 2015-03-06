@@ -41,7 +41,7 @@ def touch(fname, dt=None):
   with file(fname, 'a'):
     os.utime(fname, dt)
 
-LS_LINE_REGEX = re.compile(r'(..........)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d\d\d\d-\d\d-\d\d \d\d:\d\d)\s+(.+)$')
+LS_LINE_REGEX = re.compile(r'(..........)\s+(\w+)\s+(\w+)\s+(\d+)?\s+(\d\d\d\d-\d\d-\d\d \d\d:\d\d)\s+(.+)$')
 
 class FileInfo(object):
   def __init__(self, perms, user, group, size, timestamp, name):
@@ -49,7 +49,7 @@ class FileInfo(object):
     assert perms[1] == 'r'
     self.user = user
     self.group = group
-    self.size = int(size)
+    self.size = None if size is None else int(size)
     self.timestamp = datetime.datetime.strptime(timestamp, '%Y-%m-%d %H:%M')
     self.name = name
 
@@ -66,7 +66,10 @@ def ListAndroidDir(dir, device=None):
   for line in subprocess.check_output(adb_prefix + ['shell', 'ls', '-la', dir]).split('\r\n'):
     if line:
       m = LS_LINE_REGEX.match(line)
-      yield FileInfo(*m.groups())
+      if m:
+          yield FileInfo(*m.groups())
+      else:
+          print ("No match on line %r" % line)
 
 def main():
   parser = argparse.ArgumentParser(description='Android file sync tool.')
@@ -115,7 +118,8 @@ def main():
       copied_count += 1
       if not dry_run:
         subprocess.check_call(pull_cmd)
-        touch(out_fnam, file.timestamp)
+        if not file.perms.startswith("d"):
+            touch(out_fnam, file.timestamp)
   print "Copied %d files. %d files now up to date." % (copied_count, file_count)
 
 
