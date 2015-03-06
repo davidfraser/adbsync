@@ -110,6 +110,12 @@ def main():
     return 1
 
   def handle_file(file):
+    if file.perms.startswith("d"):
+      copied_count = 0
+      for subfile in ListAndroidDir(os.path.join(src, file.name), src_device):
+        subfile.name = os.path.join(file.name, subfile.name)
+        copied_count += handle_file(subfile)
+      return copied_count
     out_fnam = os.path.join(dest, file.name)
     try:
       stat = os.stat(out_fnam)
