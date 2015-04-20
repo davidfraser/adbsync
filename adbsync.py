@@ -87,7 +87,7 @@ def main():
 
   # For now, source must be Android, dest must not.
   assert ':' in src
-  src_device, src = src.split(":", 1)
+  src_device, src = src.rsplit(":", 1)
   assert ':' not in dest
 
   # For now, source must be a directory, as must dest.
